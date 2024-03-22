@@ -9,6 +9,9 @@
 const INTERACTION_TYPES = [{
     'selector': 'test',
     'targetedElementsType': 'test',
+    // Instead of this sentinel value you could have used `infinity`. I suspect that
+    // would remove a bunch of the conditions. Nevertheless, its probably not worth it
+    // to change it.
     'limitInteractions' : -1, //set max number of elements to interact with; leave as -1 to interact with all that apply
     'elementAttributeData': 'test,test', //leave blank if not applicable
     'action': function(element) { //function that will perform action on elements found; if no 'action' sepcified in configuration (removing this action attribute), defaults to a click simulation
@@ -60,6 +63,8 @@ async function main() {
                 'interactedElement': ls.selector
             }
             if (ls.elementAttributeData !== '') payload['elementAttributeData'] = ls.elementAttributeData;
+            // If the current url has a hash, this will not behave as you expect. Try it
+            // with https://example.com/#hello-world
             newLink.href = `${window.location.href}${queryExists}opClickAllData=${encodeURIComponent(JSON.stringify(payload))}`;
             console.log(newLink.href);
             console.log(document.querySelector(ls.selector));
@@ -74,6 +79,7 @@ function performAction(element, targetedElementsType) {
     let targetedElementsTypeObjs = INTERACTION_TYPES.filter(l => {
         return l.targetedElementsType === targetedElementsType
     });
+    // This return value is not handled. Should the callers check for it?
     if (targetedElementsTypeObjs.length === 0) return 'No configuration for targetedElementsType';
     if (targetedElementsTypeObjs[0].action && typeof targetedElementsTypeObjs[0].action === 'function') {
         targetedElementsTypeObjs[0].action(element);
@@ -182,6 +188,9 @@ function simulateClick(element) {
 async function colorElement(element, iteration, interactionObject) {
     const isVisible = await isElementInViewport(element);
     if (isVisible) {
+        // Only one pixel of the element my be visible. Maybe element.scrollIntoView()
+        // will help ensure the element is visible. Maybe you should call this before the
+        // isElementInViewport check?
         element.style.color = 'black';
         element.style.backgroundColor = '#f2cd14';
         element.style.border = '2px solid #333';
@@ -212,6 +221,11 @@ async function colorElement(element, iteration, interactionObject) {
 async function isElementInViewport(element) {
     return await new Promise(resolve => {
         const observer = new IntersectionObserver((entries) => {
+            // You need to call observe.unobserve to avoid memory leaks. Without it
+            // pages with lots of elements will eventually crash or have collection
+            // errors. I don't know many many elements it takes to crash a page, but
+            // calling unobserve is really easy.
+            // observer.unobserve(element);
             entries.forEach(entry => {
                 resolve(entry.isIntersecting);
             });
