@@ -9,7 +9,7 @@
 const INTERACTION_TYPES = [{
     'selector': 'test',
     'targetedElementsType': 'test',
-    'limitInteractions' : -1, //set max number of elements to interact with; leave as -1 to interact with all that apply
+    'limitInteractions' : Infinity, //set max number of elements to interact with; leave as Infinity to interact with all that apply
     'elementAttributeData': 'test,test', //leave blank if not applicable
     'action': function(element) { //function that will perform action on elements found; if no 'action' sepcified in configuration (removing this action attribute), defaults to a click simulation
         simulateClick(element);
@@ -54,18 +54,29 @@ async function main() {
         let linkSelectors = await getLinkSelectors(INTERACTION_TYPES);
         linkSelectors.forEach(ls => {
             var newLink = document.createElement('a');
-            var queryExists = (!/\?/.test(window.location.href)) ? '?' : '&';
             var payload = {
                 'targetedElementsType': ls.targetedElementsType,
                 'interactedElement': ls.selector
             }
             if (ls.elementAttributeData !== '') payload['elementAttributeData'] = ls.elementAttributeData;
-            newLink.href = `${window.location.href}${queryExists}opClickAllData=${encodeURIComponent(JSON.stringify(payload))}`;
+            let newURL = getNewURL(window.location, payload);
+            newLink.href = newURL;
             console.log(newLink.href);
             console.log(document.querySelector(ls.selector));
             document.body.appendChild(newLink);
         })
         console.log(`${linkSelectors.length} links found on page matching configuration`)
+    }
+
+    function getNewURL (location, payload) {
+        let protocol = location.protocol;
+        let hostname = location.hostname;
+        let path = location.pathname;
+        let queryParams = location.search;
+        let anchors = location.hash;
+        queryParams += (!/\?/.test(queryParams)) ? '?' : '&';
+        queryParams += `opClickAllData=${encodeURIComponent(JSON.stringify(payload))}`;
+        return `${protocol}//${hostname}${path}${queryParams}${anchors}`
     }
 }
 main();
@@ -74,7 +85,7 @@ function performAction(element, targetedElementsType) {
     let targetedElementsTypeObjs = INTERACTION_TYPES.filter(l => {
         return l.targetedElementsType === targetedElementsType
     });
-    if (targetedElementsTypeObjs.length === 0) return 'No configuration for targetedElementsType';
+    if (targetedElementsTypeObjs.length === 0) return console.log('No configuration for targetedElementsType')
     if (targetedElementsTypeObjs[0].action && typeof targetedElementsTypeObjs[0].action === 'function') {
         targetedElementsTypeObjs[0].action(element);
     } else {
@@ -85,11 +96,11 @@ function performAction(element, targetedElementsType) {
 async function getLinkSelectors(INTERACTION_TYPES) {
     let linkSelectors = new Array();
     for (const t of INTERACTION_TYPES) {
-        let intLimit = (t.limitInteractions) ? t.limitInteractions : -1;
+        let intLimit = (t.limitInteractions) ? t.limitInteractions : Infinity;
         console.log(`int limit ${intLimit}`)
         if (!t.elementAttributeData) t.elementAttributeData = '';
         let allLinks = [...document.querySelectorAll(t.selector)];
-        if (intLimit !== -1 && allLinks.length > intLimit){
+        if (allLinks.length > intLimit){
             allLinks = allLinks.slice(0, intLimit)
         }
         let selectors = allLinks.map(link => {
@@ -157,6 +168,7 @@ function generateQuerySelector(element) {
 function getURLParameters(url) {
     var params = {};
     var queryString = url.split('?')[1];
+    if (/\#/.test(queryString)) queryString = queryString.split('#')[0];
     if (queryString) {
         var pairs = queryString.split('&');
         pairs.forEach(function(pair) {
@@ -180,6 +192,7 @@ function simulateClick(element) {
 }
 
 async function colorElement(element, iteration, interactionObject) {
+    element.scrollIntoView();
     const isVisible = await isElementInViewport(element);
     if (isVisible) {
         element.style.color = 'black';
@@ -187,7 +200,7 @@ async function colorElement(element, iteration, interactionObject) {
         element.style.border = '2px solid #333';
         element.style.opacity = 100;
     } else if (iteration === 2) {
-        let notificationElement = document.createElement('div'); //TODO {... notation change}
+        let notificationElement = document.createElement('div');
         notificationElement.textContent = `Element not visible, but was successfully clicked\r\n\r\nIts selector is ${interactionObject['Element Selector'].trim()}\r\n\r\nIts innertext is ${interactionObject['Element Inner Text'].trim()}\r\n\r\nIts href is ${interactionObject['href'].trim()}`;
         notificationElement.style.position = 'fixed';
         notificationElement.style['white-space'] = 'break-spaces';
@@ -215,8 +228,8 @@ async function isElementInViewport(element) {
             entries.forEach(entry => {
                 resolve(entry.isIntersecting);
             });
+            observer.unobserve(element);
         });
-
         observer.observe(element);
     });
 }
