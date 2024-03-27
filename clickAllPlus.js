@@ -20,7 +20,6 @@ const INTERACTION_TYPES = [{
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-//version 2.0
 var interactionValidation = {},
     interactionObject = {
         'Element Selector': ''
@@ -106,7 +105,7 @@ async function getLinkSelectors(INTERACTION_TYPES) {
         let selectors = allLinks.map(link => {
             let querySelector = generateQuerySelector(link);
             if (querySelector !== -1){
-                let selectorSplit = querySelector.replaceAll(/\s/g, '').split('#');
+                let selectorSplit = querySelector.split('#');
                 if (selectorSplit.length === 1) {
                     return {
                         'selector': selectorSplit[0],
