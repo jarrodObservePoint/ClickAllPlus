@@ -9,7 +9,7 @@
 const INTERACTION_TYPES = [{
     'selector': 'test',
     'targetedElementsType': 'test',
-    'limitInteractions' : Infinity, //set max number of elements to interact with; leave as Infinity to interact with all that apply
+    'limitInteractions': Infinity, //set max number of elements to interact with; leave as Infinity to interact with all that apply
     'elementAttributeData': 'test,test', //leave blank if not applicable
     'action': function(element) { //function that will perform action on elements found; if no 'action' sepcified in configuration (removing this action attribute), defaults to a click simulation
         simulateClick(element);
@@ -67,7 +67,7 @@ async function main() {
         console.log(`${linkSelectors.length} links found on page matching configuration`)
     }
 
-    function getNewURL (location, payload) {
+    function getNewURL(location, payload) {
         let protocol = location.protocol;
         let hostname = location.hostname;
         let path = location.pathname;
@@ -99,12 +99,12 @@ async function getLinkSelectors(INTERACTION_TYPES) {
         console.log(`int limit ${intLimit}`)
         if (!t.elementAttributeData) t.elementAttributeData = '';
         let allLinks = [...document.querySelectorAll(t.selector)];
-        if (allLinks.length > intLimit){
+        if (allLinks.length > intLimit) {
             allLinks = allLinks.slice(0, intLimit)
         }
         let selectors = allLinks.map(link => {
             let querySelector = generateQuerySelector(link);
-            if (querySelector !== -1){
+            if (querySelector !== -1) {
                 let selectorSplit = querySelector.split('#');
                 if (selectorSplit.length === 1) {
                     return {
@@ -154,10 +154,9 @@ function generateQuerySelector(element) {
         }
         selectorParts.unshift(selector);
         currentElement = currentElement.parentElement;
-        try{
+        try {
             querylength = document.querySelectorAll(selectorParts.join('>')).length;
-        }
-        catch(e) {
+        } catch (e) {
             return -1
         }
     }
