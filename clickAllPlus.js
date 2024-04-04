@@ -164,9 +164,7 @@ function generateQuerySelector(element) {
 }
 
 function getOpDataParam(url_string) {
-    var url_string = window.location.href; 
-    var urlObj = new URL(url_string);
-    var opData = urlObj.searchParams.get("opClickAllData");
+    let opData = new URL(url_string).searchParams.get("opClickAllData");
     return (opData) ? JSON.parse(decodeURIComponent(opData)) : null;
 }
 
