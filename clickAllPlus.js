@@ -25,9 +25,9 @@ var interactionValidation = {},
         'Element Selector': ''
     };
 async function main() {
-    let par = getURLParameters(window.location.href)
-    if (par['opClickAllData']) {
-        let allData = JSON.parse(par['opClickAllData']);
+    let opClickAllData = getOpDataParam(window.location.href)
+    if (opClickAllData) {
+        let allData = opClickAllData;
         let selector = allData['interactedElement'];
         interactionObject['Element Selector'] = selector;
         let interactionElement = document.querySelector(selector);
@@ -163,20 +163,11 @@ function generateQuerySelector(element) {
     return selectorParts.join('>')
 }
 
-function getURLParameters(url) {
-    var params = {};
-    var queryString = url.split('?')[1];
-    if (/\#/.test(queryString)) queryString = queryString.split('#')[0];
-    if (queryString) {
-        var pairs = queryString.split('&');
-        pairs.forEach(function(pair) {
-            var keyValue = pair.split('=');
-            var key = decodeURIComponent(keyValue[0]);
-            var value = decodeURIComponent(keyValue[1]);
-            params[key] = value;
-        });
-    }
-    return params;
+function getOpDataParam(url_string) {
+    var url_string = window.location.href; 
+    var urlObj = new URL(url_string);
+    var opData = urlObj.searchParams.get("opClickAllData");
+    return (opData) ? JSON.parse(decodeURIComponent(opData)) : null;
 }
 
 function simulateClick(element) {
