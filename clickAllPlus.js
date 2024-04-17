@@ -96,7 +96,6 @@ async function getLinkSelectors(INTERACTION_TYPES) {
     let linkSelectors = new Array();
     for (const t of INTERACTION_TYPES) {
         let intLimit = (t.limitInteractions) ? t.limitInteractions : Infinity;
-        console.log(`int limit ${intLimit}`)
         if (!t.elementAttributeData) t.elementAttributeData = '';
         let allLinks = [...document.querySelectorAll(t.selector)];
         if (allLinks.length > intLimit) {
@@ -105,20 +104,11 @@ async function getLinkSelectors(INTERACTION_TYPES) {
         let selectors = allLinks.map(link => {
             let querySelector = generateQuerySelector(link);
             if (querySelector !== -1) {
-                let selectorSplit = querySelector.split('#');
-                if (selectorSplit.length === 1) {
-                    return {
-                        'selector': selectorSplit[0],
-                        'targetedElementsType': t.targetedElementsType,
-                        'elementAttributeData': t.elementAttributeData
-                    }
-                } else {
-                    return {
-                        'selector': `#${selectorSplit[selectorSplit.length -1]}`.replace(/#(.*?)(?=[.>])/, '[id="$1"]').replace(/#(\d+)/, '[id="$1"]'),
-                        'targetedElementsType': t.targetedElementsType,
-                        'elementAttributeData': t.elementAttributeData
-                    }
-                }
+				return {
+					'selector': querySelector,
+					'targetedElementsType': t.targetedElementsType,
+					'elementAttributeData': t.elementAttributeData
+				}
             } else {
                 console.log(`Failure collecting CSS selector for: ${link}`)
             }
@@ -136,12 +126,10 @@ function generateQuerySelector(element) {
     let querylength = 0;
     while (currentElement && currentElement.nodeType === Node.ELEMENT_NODE && querylength !== 1) {
         let selector = currentElement.nodeName.toLowerCase();
-        if (currentElement.id) {
-            selector = `#${currentElement.id}`;
-            selectorParts.unshift(selector);
-            break;
+        if (currentElement.id && !uuidCheck(currentElement.id)) {
+            selector = `[id="${currentElement.id}"]`;
         } else {
-            let classes = Array.from(currentElement.classList).map(className => (!/[#:]/.test(className) && !/\d+/.test(className)) ? `.${className}` : '').join('');
+            let classes = Array.from(currentElement.classList).map(className => (classCheck(className) && !uuidCheck(className)) ? `.${className}` : '').join('');
             selector += classes;
 
             if (currentElement.parentElement) {
@@ -161,6 +149,17 @@ function generateQuerySelector(element) {
         }
     }
     return selectorParts.join('>')
+
+	function classCheck (className) {
+		//class cannot contain the following: no pound sign or colon, cannot have a string of numbers
+		return !/[#:]/.test(className) && !/\d+/.test(className)
+	}
+
+    function uuidCheck (s) {
+        //check if selector attribute contains a UUID, so if it does, we skip them (prevents using rotating attribute)
+        const uuidPattern = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
+        return uuidPattern.test(s);
+    }
 }
 
 function getOpDataParam(url_string) {
