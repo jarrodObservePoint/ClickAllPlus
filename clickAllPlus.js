@@ -177,6 +177,19 @@ function simulateClick(element) {
     element.dispatchEvent(clickEvent);
 }
 
+function returnRelevantParent (element,parentSelector) {
+	let checkElement = element;
+	while (checkElement.parentElement) {
+		checkElement = checkElement.parentElement;
+		let matchesParent = checkElement.matches(parentSelector);
+		if (matchesParent) {
+            return checkElement
+		} else if (checkElement.nodeName === 'HTML') {
+            return null
+        }
+	} 
+}
+
 async function colorElement(element, iteration, interactionObject) {
     element.scrollIntoView();
     const isVisible = await isElementInViewport(element);
