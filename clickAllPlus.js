@@ -68,14 +68,13 @@ async function main() {
     }
 
     function getNewURL(location, payload) {
-        let protocol = location.protocol;
-        let hostname = location.hostname;
-        let path = location.pathname;
-        let queryParams = location.search;
-        let anchors = location.hash;
-        queryParams += (!/\?/.test(queryParams)) ? '?' : '&';
-        queryParams += `opClickAllData=${encodeURIComponent(JSON.stringify(payload))}`;
-        return `${protocol}//${hostname}${path}${queryParams}${anchors}`
+        const baseUrl = `${location.protocol}//${location.hostname}${location.pathname}`;
+        const params = {
+            ...Object.fromEntries(new URLSearchParams(location.search)),
+            opClickAllData: encodeURIComponent(JSON.stringify(payload))
+        };
+        const queryString = new URLSearchParams(params).toString();
+        return `${baseUrl}?${queryString}${location.hash}`;
     }
 }
 main();
@@ -123,44 +122,57 @@ async function getLinkSelectors(INTERACTION_TYPES) {
 function generateQuerySelector(element) {
     const selectorParts = [];
     let currentElement = element;
-    let querylength = 0;
-    while (currentElement && currentElement.nodeType === Node.ELEMENT_NODE && querylength !== 1) {
+
+    while (currentElement && currentElement.nodeType === Node.ELEMENT_NODE) {
         let selector = currentElement.nodeName.toLowerCase();
+
         if (currentElement.id && !uuidCheck(currentElement.id)) {
             selector = `[id="${currentElement.id}"]`;
         } else {
-            let classes = Array.from(currentElement.classList).map(className => (classCheck(className) && !uuidCheck(className)) ? `.${className}` : '').join('');
+            const classes = Array.from(currentElement.classList)
+                .filter(classCheck)
+                .map(className => `.${className}`)
+                .join('');
             selector += classes;
 
             if (currentElement.parentElement) {
                 const siblings = Array.from(currentElement.parentElement.children);
-                const index = siblings.indexOf(currentElement) + 1;
-                if (index > 1) {
+                const sameTagSiblings = siblings.filter(sibling => sibling.nodeName.toLowerCase() === selector.split('.')[0]);
+                if (sameTagSiblings.length > 1) {
+                    const index = sameTagSiblings.indexOf(currentElement) + 1;
                     selector += `:nth-child(${index})`;
                 }
             }
         }
+
         selectorParts.unshift(selector);
-        currentElement = currentElement.parentElement;
+
+        const query = selectorParts.join('>');
         try {
-            querylength = document.querySelectorAll(selectorParts.join('>')).length;
+            if (document.querySelectorAll(query).length === 1) {
+                break;
+            }
         } catch (e) {
-            return -1
+            return -1;
         }
+
+        currentElement = currentElement.parentElement;
     }
-    return selectorParts.join('>')
 
-	function classCheck (className) {
-		//class cannot contain the following: no pound sign or colon, cannot have a string of numbers
-		return !/[#:]/.test(className) && !/\d+/.test(className)
-	}
+    return selectorParts.join('>');
 
-    function uuidCheck (s) {
-        //check if selector attribute contains a UUID, so if it does, we skip them (prevents using rotating attribute)
+    function classCheck(className) {
+        // Class cannot contain special characters or be a UUID
+        return !/[#:]/.test(className) && !/\d+/.test(className);
+    }
+
+    function uuidCheck(s) {
+        // Check if selector attribute contains a UUID
         const uuidPattern = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
         return uuidPattern.test(s);
     }
 }
+
 
 function getOpDataParam(url_string) {
     let opData = new URL(url_string).searchParams.get("opClickAllData");
@@ -168,7 +180,6 @@ function getOpDataParam(url_string) {
 }
 
 function simulateClick(element) {
-    element.scrollIntoView();
     var clickEvent = new MouseEvent("click", {
         bubbles: true,
         cancelable: true,
@@ -177,7 +188,7 @@ function simulateClick(element) {
     element.dispatchEvent(clickEvent);
 }
 
-function returnRelevantParent (element,parentSelector) {
+async function returnRelevantParent (element,parentSelector) {
 	let checkElement = element;
 	while (checkElement.parentElement) {
 		checkElement = checkElement.parentElement;
@@ -191,7 +202,6 @@ function returnRelevantParent (element,parentSelector) {
 }
 
 async function colorElement(element, iteration, interactionObject) {
-    element.scrollIntoView();
     const isVisible = await isElementInViewport(element);
     if (isVisible) {
         element.style.color = 'black';
