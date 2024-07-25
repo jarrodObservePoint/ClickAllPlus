@@ -180,12 +180,29 @@ function getOpDataParam(url_string) {
 }
 
 function simulateClick(element) {
-    var clickEvent = new MouseEvent("click", {
+    var mouseDownEvent = new MouseEvent("mousedown", {
         bubbles: true,
         cancelable: true,
         view: window
     });
-    element.dispatchEvent(clickEvent);
+    element.dispatchEvent(mouseDownEvent);
+
+    setTimeout(function() {
+        var mouseUpEvent = new MouseEvent("mouseup", {
+            bubbles: true,
+            cancelable: true,
+            view: window
+        });
+        element.dispatchEvent(mouseUpEvent);
+
+        // Click event
+        var clickEvent = new MouseEvent("click", {
+            bubbles: true,
+            cancelable: true,
+            view: window
+        });
+        element.dispatchEvent(clickEvent);
+    }, 100);
 }
 
 async function returnRelevantParent (element,parentSelector) {
