@@ -4,7 +4,8 @@
 
 // Include filter must include the following after the domain: .*opClickAllData.*
 // e.g., https://example.com.*opClickAllData.*
-// Add two new Data Layer objects within the sub-folder: interactionObject, interactionValidation
+// Add the following two new data layers to your account's configuration (https://app.observepoint.com/configurations/manage-data-layers): 
+// interactionObject, interactionValidation
 
 const INTERACTION_TYPES = [
   {
@@ -59,18 +60,15 @@ const interactionObject = {
     while (element && element.nodeType === Node.ELEMENT_NODE) {
       let selector = element.nodeName.toLowerCase();
 
-      // Include the ID if present, but don't assume it's unique
       if (element.id && !uuidCheck(element.id)) {
         selector += `[id="${CSS.escape(element.id)}"]`;
       }
 
-      // Add all classes
       const classList = Array.from(element.classList)
         .filter(Boolean)
         .map((cls) => "." + CSS.escape(cls));
       selector += classList.join("");
 
-      // Check if we need to add nth-of-type
       if (element.parentNode) {
         const parent = element.parentNode;
         const tagName = element.nodeName.toLowerCase();
@@ -88,7 +86,6 @@ const interactionObject = {
 
       const fullSelector = paths.join(" > ");
 
-      // Verify that the selector uniquely identifies the element
       if (document.querySelectorAll(fullSelector).length === 1) {
         return fullSelector;
       }
@@ -98,11 +95,9 @@ const interactionObject = {
 
     const fullSelector = paths.join(" > ");
 
-    // Final check for uniqueness
     if (document.querySelectorAll(fullSelector).length === 1) {
       return fullSelector;
     } else {
-      // If not unique, return null or handle accordingly
       console.warn("Selector is not unique:", fullSelector);
       return null;
     }
@@ -259,7 +254,6 @@ const interactionObject = {
       iteration++;
     }
 
-    // If element not visible after traversing up
     displayNotification(interactionObject);
   }
 
@@ -269,8 +263,27 @@ const interactionObject = {
    * @returns {boolean} - True if the element is in the viewport, false otherwise.
    */
   function isElementInViewport(element) {
+    if (!(element instanceof Element)) {
+      throw new Error("isElementInViewport: element is not a DOM element.");
+    }
+
     const rect = element.getBoundingClientRect();
-    return rect.top >= 0 && rect.left >= 0;
+    const hasDimensions = rect.width > 0 && rect.height > 0;
+
+    const inViewport =
+      rect.top >= 0 &&
+      rect.left >= 0 &&
+      rect.bottom <=
+        (window.innerHeight || document.documentElement.clientHeight) &&
+      rect.right <= (window.innerWidth || document.documentElement.clientWidth);
+
+    const style = window.getComputedStyle(element);
+    const isVisible =
+      style.display !== "none" &&
+      style.visibility !== "hidden" &&
+      style.opacity !== "0";
+
+    return hasDimensions && inViewport && isVisible;
   }
 
   /**
